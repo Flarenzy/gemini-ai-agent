@@ -15,7 +15,7 @@ class Calculator:
             "/": 2,
         }
 
-    def evaluate(self, expression):
+    def evaluate(self, expression: str):
         if not expression or expression.isspace():
             return None
         tokens = expression.strip().split()
@@ -25,20 +25,20 @@ class Calculator:
         values = []
         operators = []
 
-        for token in tokens:
-            if token in self.operators:
+        for t in tokens:
+            if t in self.operators:
                 while (
                     operators
                     and operators[-1] in self.operators
-                    and self.precedence[operators[-1]] >= self.precedence[token]
+                    and self.precedence[operators[-1]] >= self.precedence[t]
                 ):
                     self._apply_operator(operators, values)
-                operators.append(token)
+                operators.append(t)
             else:
                 try:
-                    values.append(float(token))
+                    values.append(float(t))
                 except ValueError:
-                    raise ValueError(f"invalid token: {token}")
+                    raise ValueError(f"invalid token: {t}")
 
         while operators:
             self._apply_operator(operators, values)
