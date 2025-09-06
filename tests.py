@@ -39,4 +39,19 @@ Result for '../' directory:
 )
 def test_get_files_info(workdir, directory, expected_res):
     res = get_files_info(workdir, directory)
+    print(res)
     assert res.strip() == expected_res.strip()
+
+
+if __name__ == "__main__":
+    cases = [
+        ("calculator", ".", "Result for current directory:"),
+        ("calculator", "pkg", "Result for 'pkg' directory:"),
+        ("calculator", "/bin", "Result for '/bin' directory:"),
+        ("calculator", "../", "Result for '../' directory:"),
+    ]
+
+    for workdir, directory, _ in cases:
+        res = get_files_info(workdir, directory)
+        print(res)
+        print()
