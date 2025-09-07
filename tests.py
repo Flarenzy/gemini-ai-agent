@@ -1,6 +1,7 @@
 import pytest
 
 from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
 
 EXPECTED_FOR_CURRENT = """
 Result for current directory:
@@ -37,21 +38,58 @@ Result for '../' directory:
             ("calculator", "../", EXPECTED_FOR_PARENT)
             ]
 )
-def test_get_files_info(workdir, directory, expected_res):
+def test_get_files_info(
+                        workdir: str,
+                        directory: str,
+                        expected_res: str
+                        ) -> None:
     res = get_files_info(workdir, directory)
-    print(res)
+    assert res.strip() == expected_res.strip()
+
+
+with open("./calculator/main.py", "r") as f:
+    EXPECTED_MAIN_PY = f.read()
+
+with open("./calculator/pkg/calculator.py", "r") as f:
+    EXPECTED_CALC_PY = f.read()
+
+EXPECTED_BIN_CAT = (
+                    "Error: Cannot read '/bin/cat' as it is"
+                    " outside the permitted working directory")
+
+EXPECTED_NOT_EXISTS = (
+                       "Error: File not found or is not a "
+                       "regular file: 'pkg/does_not_exist.py'"
+                      )
+
+
+@pytest.mark.parametrize(
+        "workdir, file_path, expected_res",
+        [
+            ("calculator", "main.py", EXPECTED_MAIN_PY),
+            ("calculator", "pkg/calculator.py", EXPECTED_CALC_PY),
+            ("calculator", "/bin/cat", EXPECTED_BIN_CAT),
+            ("calculator", "pkg/does_not_exist.py", EXPECTED_NOT_EXISTS)
+        ]
+)
+def test_get_file_content(
+                          workdir: str,
+                          file_path: str,
+                          expected_res: str
+                          ) -> None:
+    res = get_file_content(workdir, file_path)
     assert res.strip() == expected_res.strip()
 
 
 if __name__ == "__main__":
     cases = [
-        ("calculator", ".", "Result for current directory:"),
-        ("calculator", "pkg", "Result for 'pkg' directory:"),
-        ("calculator", "/bin", "Result for '/bin' directory:"),
-        ("calculator", "../", "Result for '../' directory:"),
+        ("calculator", "main.py"),
+        ("calculator", "pkg/calculator.py"),
+        ("calculator", "/bin/cat"),
+        ("calculator", "pkg/does_not_exist.py"),
     ]
 
-    for workdir, directory, _ in cases:
-        res = get_files_info(workdir, directory)
+    for workdir, directory in cases:
+        res = get_file_content(workdir, directory)
         print(res)
         print()

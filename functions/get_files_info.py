@@ -1,5 +1,8 @@
 import os
 
+from functions._filepath_helpers import _is_path_allowed
+from functions._filepath_helpers import _walk_directory
+
 
 def get_files_info(
                     working_directory: str,
@@ -17,15 +20,21 @@ def get_files_info(
                         working directory
 
     Returns:
-        str: List of strings containing the name, size and is_dir for all 
-             files in a directory.
+        str: String containing the name, size and is_dir for all
+             files in a directory or a erorr message prefixed with 'Error:'.
+
+    Example:
+        res = get_files_info('calculator', '.')\n
+        print(res)\n
+        Result for current directory:\n
+         - tests.py: file_size=1343 bytes, is_dir=False
+         - main.py: file_size=576 bytes, is_dir=False
+         - pkg: file_size=192 bytes, is_dir=True
     """
     try:
         full_path = os.path.join(working_directory, directory)
-        if (
-            directory not in os.listdir(working_directory)
-            and directory != "."
-           ):
+        file_list: list[str] = _walk_directory(working_directory)
+        if not _is_path_allowed(directory, working_directory, file_list):
             return (
                     f"Result for '{directory}' directory:\n"
                     f"    Error: Cannot list '{directory}' as it "
