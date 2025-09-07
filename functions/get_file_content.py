@@ -9,7 +9,7 @@ from functions.config import FILE_CHAR_LIMIT
 def get_file_content(working_directory: str, file_path: str) -> str:
     """
     Returns a string ,or a error message as a string, containing the
-    contents of a regular file insede the working directory.
+    contents of a regular file inside the working directory.
 
     Args:
         working_directory(str): Path of the current working directory
