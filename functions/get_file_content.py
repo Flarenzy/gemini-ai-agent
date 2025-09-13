@@ -1,8 +1,6 @@
 import os
 
-
 from functions._filepath_helpers import _is_path_allowed
-from functions._filepath_helpers import _walk_directory
 from functions.config import FILE_CHAR_LIMIT
 
 
@@ -26,8 +24,7 @@ def get_file_content(working_directory: str, file_path: str) -> str:
                     "Error: File not found or is not a "
                     f"regular file: '{file_path}'"
                     )
-        file_list = _walk_directory(working_directory)
-        if not _is_path_allowed(file_path, working_directory, file_list):
+        if not _is_path_allowed(file_path, working_directory):
             return (
                     f"Error: Cannot read '{file_path}' as it is outside the"
                     " permitted working directory"

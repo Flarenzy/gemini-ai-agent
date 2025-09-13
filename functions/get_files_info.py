@@ -1,7 +1,6 @@
 import os
 
 from functions._filepath_helpers import _is_path_allowed
-from functions._filepath_helpers import _walk_directory
 
 
 def get_files_info(
@@ -33,8 +32,7 @@ def get_files_info(
     """
     try:
         full_path = os.path.join(working_directory, directory)
-        file_list: list[str] = _walk_directory(working_directory)
-        if not _is_path_allowed(directory, working_directory, file_list):
+        if not _is_path_allowed(directory, working_directory):
             return (
                     f"Result for '{directory}' directory:\n"
                     f"    Error: Cannot list '{directory}' as it "

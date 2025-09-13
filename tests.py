@@ -1,7 +1,10 @@
+import pathlib
+
 import pytest
 
 from functions.get_files_info import get_files_info
 from functions.get_file_content import get_file_content
+from functions.write_file import write_file
 
 EXPECTED_FOR_CURRENT = """
 Result for current directory:
@@ -81,15 +84,56 @@ def test_get_file_content(
     assert res.strip() == expected_res.strip()
 
 
-if __name__ == "__main__":
-    cases = [
-        ("calculator", "main.py"),
-        ("calculator", "pkg/calculator.py"),
-        ("calculator", "/bin/cat"),
-        ("calculator", "pkg/does_not_exist.py"),
-    ]
+@pytest.mark.parametrize(
+    "file_path, content, expect_error",
+    [
+        (
+            "lorem.txt",
+            "wait, this isn't lorem ipsum",
+            False,
+        ),
+        (
+            "pkg/morelorem.txt",
+            "lorem ipsum dolor sit amet",
+            False,
+        ),
+        (
+            "/tmp/temp.txt",
+            "this should not be allowed",
+            True,
+        ),
+    ],
+)
+def test_write_file(
+                    tmp_path: pathlib.Path,
+                    file_path: str, content: str,
+                    expect_error: bool
+                    ) -> None:
+    workdir = tmp_path
 
-    for workdir, directory in cases:
-        res = get_file_content(workdir, directory)
-        print(res)
-        print()
+    target_path = workdir / file_path
+    if target_path.parent != workdir:
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    res = write_file(str(workdir), file_path, content)
+
+    if expect_error:
+        assert "Error: Cannot write" in res
+        assert not target_path.exists()
+    else:
+        assert "Successfully wrote" in res
+        # Verify file contents were written correctly
+        assert target_path.read_text() == content
+
+
+if __name__ == "__main__":
+    res = write_file("calculator", "lorem.txt", "wait, this isn't lorem ipsum")
+    print(res)
+    res = write_file("calculator",
+                     "pkg/morelorem.txt",
+                     "lorem ipsum dolor sit amet")
+    print(res)
+    res = write_file("calculator",
+                     "/tmp/temp.txt",
+                     "this should not be allowed")
+    print(res)
