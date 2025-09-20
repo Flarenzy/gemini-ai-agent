@@ -1,9 +1,15 @@
 import argparse
 import os
 
+from typing import Callable
+
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
+from functions.write_file import write_file
+from functions.run_python_file import run_python_file
 
 
 system_prompt = """
@@ -20,7 +26,76 @@ You can perform the following operations:
 All paths you provide should be relative to the working directory. You do not
 need to specify the working directory in your function calls as it is
 automatically injected for security reasons.
+
+If optional arguments are not needed, call the tool with an empty args list.
+Do not ask the user to supply optional args unless strictly required.
 """
+
+functions: dict[str, Callable[..., str]] = {
+    "get_files_info": get_files_info,
+    "get_file_content": get_file_content,
+    "write_file": write_file,
+    "run_python_file": run_python_file,
+}
+
+
+def call_function(
+                  function_call_part: types.FunctionCall,
+                  verbose: bool = False
+                  ) -> types.Content:
+
+    if function_call_part.name is None:
+        return types.Content(
+                            role="tool",
+                            parts=[
+                                types.Part.from_function_response(
+                                    name="None",
+                                    response={"result": "Error: no func name"},
+                                )
+                            ],
+                        )
+
+    if verbose:
+        print(f"Calling function: {function_call_part.name}"
+              f"({function_call_part.args})")
+    else:
+        print(f" - Calling function: {function_call_part.name}")
+
+    if function_call_part.args is None:
+        return types.Content(
+                            role="tool",
+                            parts=[
+                                types.Part.from_function_response(
+                                    name=function_call_part.name,
+                                    response={"result": "Error: no func args"},
+                                )
+                            ],
+                        )
+
+    args = {"working_directory": "./calculator"} | function_call_part.args
+    try:
+        res = functions[function_call_part.name](**args)
+        return types.Content(
+                            role="tool",
+                            parts=[
+                                types.Part.from_function_response(
+                                    name=function_call_part.name,
+                                    response={"result": res},
+                                )
+                            ],
+                        )
+    except KeyError:
+        return types.Content(
+                            role="tool",
+                            parts=[
+                                types.Part.from_function_response(
+                                    name=function_call_part.name,
+                                    response={"error":
+                                              "Unknown function: "
+                                              f"{function_call_part.name}"},
+                                )
+                            ],
+                        )
 
 
 parser = argparse.ArgumentParser()
@@ -105,7 +180,8 @@ schema_write_file = types.FunctionDeclaration(
 schema_run_python_file = types.FunctionDeclaration(
     name="run_python_file",
     description=("Run a python file specified by a file path with "
-                 "optional args (list[str])"),
+                 "optional args (list[str]) - "
+                 "do not ask for them from the user"),
     parameters=types.Schema(
         type=types.Type.OBJECT,
         properties={
@@ -149,8 +225,17 @@ content_resp = client.models.generate_content(model="gemini-2.0-flash-001",
 
 if content_resp.function_calls:
     for function_call_part in content_resp.function_calls:
-        print(f"Calling function: {function_call_part.name}"
-              f"({function_call_part.args})")
+        function_call_result = call_function(function_call_part, args.verbose)
+        if (
+            args.verbose
+            and function_call_result.parts is not None
+            and function_call_result.parts[0].function_response is not None
+           ):
+            print("-> "
+                  f"{function_call_result.parts[0].function_response.response}"
+                  )
+        else:
+            raise SystemExit(2)
 
 if content_resp.text is not None:
     print(content_resp.text)

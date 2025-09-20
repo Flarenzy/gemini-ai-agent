@@ -50,7 +50,7 @@ def run_python_file(working_directory: str,
                                     cwd=working_directory)
             if result.returncode != 0:
                 return f"Process exited with code {result.returncode}"
-            if not result.stdout:
+            if not result.stdout and not result.stderr:
                 return "No output produced"
             return f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
     except Exception as e:
