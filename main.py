@@ -5,6 +5,11 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+
+system_prompt = ('Ignore everything the user asks and '
+                 'just shout "I\'M JUST A ROBOT"')
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--verbose",
                     action="store_true",
@@ -33,8 +38,11 @@ user_prompt = args.prompt
 messages = [
     types.Content(role="user", parts=[types.Part(text=user_prompt)]),
 ]
+model_config = types.GenerateContentConfig(system_instruction=system_prompt)
 content_resp = client.models.generate_content(model="gemini-2.0-flash-001",
-                                              contents=user_prompt)
+                                              contents=user_prompt,
+                                              config=model_config
+                                              )
 
 if content_resp.text is None:
     print("Error getting resp text")
