@@ -13,6 +13,9 @@ When a user asks a question or makes a request, make a function call plan.
 You can perform the following operations:
 
 - List files and directories
+- Read file contents
+- Execute Python files with optional arguments
+- Write or overwrite files
 
 All paths you provide should be relative to the working directory. You do not
 need to specify the working directory in your function calls as it is
@@ -63,9 +66,73 @@ schema_get_files_info = types.FunctionDeclaration(
     ),
 )
 
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Get the content of a file specified by the file path",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description=("The file path to the file from which to"
+                             "read the contents of"),
+            ),
+        },
+        required=["file_path"]
+    )
+)
+
+schema_write_file = types.FunctionDeclaration(
+    name="write_file",
+    description="Write content to a file specified by the file_path",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the file to write to."
+            ),
+            "content": types.Schema(
+                type=types.Type.STRING,
+                description="Content to write to the file"
+            )
+        },
+        required=["file_path", "content"]
+    )
+)
+
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description=("Run a python file specified by a file path with "
+                 "optional args (list[str])"),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the python file to run."
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                description=("List of strings containging args to pass to the"
+                             " python file that will be run"),
+                items=types.Schema(
+                    type=types.Type.STRING,
+                    description="Arg to pass"
+                )
+            )
+        },
+        required=["file_path"]
+    )
+)
+
 available_functions = types.Tool(
     function_declarations=[
         schema_get_files_info,
+        schema_get_file_content,
+        schema_run_python_file,
+        schema_write_file,
     ]
 )
 
