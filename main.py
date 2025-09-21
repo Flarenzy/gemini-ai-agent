@@ -28,9 +28,7 @@ need to specify the working directory in your function calls as it is
 automatically injected for security reasons.
 The working directory is called calulator.
 
-Only send the GenerateContentResponse.text property
-when you have finished everything.
-That property should be used as a summury of what you did and how you did it.
+Bug fixes mean that you just need to change the code that is causing the bug.
 
 If optional arguments are not needed, call the tool with an empty args list.
 Do not ask the user to supply optional args unless strictly required.
