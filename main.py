@@ -26,6 +26,11 @@ You can perform the following operations:
 All paths you provide should be relative to the working directory. You do not
 need to specify the working directory in your function calls as it is
 automatically injected for security reasons.
+The working directory is called calulator.
+
+Only send the GenerateContentResponse.text property
+when you have finished everything.
+That property should be used as a summury of what you did and how you did it.
 
 If optional arguments are not needed, call the tool with an empty args list.
 Do not ask the user to supply optional args unless strictly required.
@@ -217,38 +222,63 @@ messages = [
 ]
 model_config = types.GenerateContentConfig(tools=[available_functions],
                                            system_instruction=system_prompt)
-content_resp = client.models.generate_content(model="gemini-2.0-flash-001",
-                                              contents=messages,
-                                              config=model_config
-                                              )
 
 
-if content_resp.function_calls:
-    for function_call_part in content_resp.function_calls:
-        function_call_result = call_function(function_call_part, args.verbose)
-        if (
-            args.verbose
-            and function_call_result.parts is not None
-            and function_call_result.parts[0].function_response is not None
-           ):
-            print("-> "
-                  f"{function_call_result.parts[0].function_response.response}"
-                  )
+for i in range(20):
+    content_resp = client.models.generate_content(model="gemini-2.0-flash-001",
+                                                  contents=messages,
+                                                  config=model_config
+                                                  )
+
+    messages.extend(
+        c.content for c in (content_resp.candidates or [])
+        if c.content is not None
+    )
+
+    if args.verbose:
+        print(f"User prompt: {user_prompt}")
+        meta = content_resp.usage_metadata
+        if meta is None:
+            print("Error getting usage data")
         else:
-            raise SystemExit(2)
+            prompt_tokens = (f"Prompt tokens: "
+                             f"{meta.prompt_token_count}")
+            resp_tokens = (f"Response tokens: "
+                           f"{meta.candidates_token_count}")
+            print(prompt_tokens)
+            print(resp_tokens)
 
-if content_resp.text is not None:
-    print(content_resp.text)
+    if content_resp.function_calls:
+        for function_call_part in content_resp.function_calls:
+            function_call_result = call_function(
+                                                 function_call_part,
+                                                 args.verbose
+                                                 )
 
-
-if args.verbose:
-    print(f"User prompt: {user_prompt}")
-    if content_resp.usage_metadata is None:
-        print("Error getting usage data")
-    else:
-        prompt_tokens = (f"Prompt tokens: "
-                         f"{content_resp.usage_metadata.prompt_token_count}")
-        resp_tokens = (f"Response tokens: "
-                       f"{content_resp.usage_metadata.candidates_token_count}")
-        print(prompt_tokens)
-        print(resp_tokens)
+            if (
+                function_call_result.parts is not None
+                and function_call_result.parts[0].function_response is not None
+            ):
+                msg = function_call_result.parts[0].function_response.response
+                print("-> "
+                      f"{msg}"
+                      )
+                part = function_call_result.parts[0]
+                function_response = part.function_response
+                if (
+                    function_response is None
+                    or function_response.response is None
+                   ):
+                    continue                
+                res = function_response.response["result"]
+                func_rec = types.Content(
+                                        role="user",
+                                        parts=[types.Part(text=res)]
+                                        )
+                messages.append(func_rec)
+            else:
+                raise SystemExit(2)
+    elif content_resp.text is not None:
+        print(content_resp.text)
+        # print("breaking out of loop")
+        break
